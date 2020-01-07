@@ -150,7 +150,8 @@ def appears_to_be_python_pkg(line):
 def appears_to_be_c_or_cpp_pkg(line):
   if re.search(r'^.*make.*$', line) or \
      re.search(r'^.*ninja.*$', line) or \
-     re.search(r'^.*Build.*$', line): # put in place for libmilter
+     re.search(r'^.*Build.*$', line) or \
+     re.search(r'^.*autogen.*$', line):
     return True
   else:
     return False
