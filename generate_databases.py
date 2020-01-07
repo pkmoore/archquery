@@ -9,9 +9,8 @@ import random
 import argparse
 import logging
 
-WORKING_DIRECTORY = "/home/preston/.archquerywork"
-CODEQL_DIR = "/home/preston/ql/"
-
+WORKING_DIRECTORY = os.path.join(os.path.expanduser("~"), ".archquerywork")
+CODEQL_DIR = os.path.join(os.path.expanduser("~"), "ql")
 
 def get_list_of_packages():
     bad_packages = [
@@ -148,9 +147,9 @@ def modify_PKGBUILDS(dirs):
 
 
 def line_to_generate_c_or_cpp_database(line, pkg):
+    codeql_bin = os.path.join(CODEQL_DIR, 'codeql/codeql')
     return (
-        CODEQL_DIR
-        + 'codeql/codeql database create --language=cpp --command="'
+        codeql_bin + ' database create --language=cpp --command="'
         + line.strip()
         + '" '
         + os.path.join(os.path.join(WORKING_DIRECTORY, "codeql_databases"), pkg)
@@ -159,9 +158,9 @@ def line_to_generate_c_or_cpp_database(line, pkg):
 
 
 def line_to_generate_python_database(line, pkg):
+    codeql_bin = os.path.join(CODEQL_DIR, 'codeql/codeql')
     return (
-        CODEQL_DIR
-        + 'codeql/codeql database create --language=python --command="'
+        codeql_bin + ' database create --language=python --command="'
         + line.strip()
         + '" '
         + os.path.join(os.path.join(WORKING_DIRECTORY, "codeql_databases"), pkg)
