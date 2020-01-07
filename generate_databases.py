@@ -26,7 +26,7 @@ def synchronize_package_databases():
     subprocess.check_call(["sudo", "pacman", "-Sy"])
 
 
-def get_list_of_packages():
+def get_list_of_packages(package_count):
     bad_packages = [
         "pacman-mirrorlist",  # not code
         "pacman",  # may cause problems
@@ -67,7 +67,7 @@ def get_list_of_packages():
     packages = [f for f in packages if f not in bad_packages]
 
     random.shuffle(packages)
-    return packages[:40]
+    return packages[:package_count]
 
 
 def check_executables():
@@ -262,6 +262,13 @@ def parse_args():
         default=False,
     )
     parser.add_argument(
+        "--package-count",
+        help="How many packages should we download",
+        required=False,
+        type=int,
+        default=-1,
+    )
+    parser.add_argument(
         "--no-modify",
         help="Don't modify pkgbuilds",
         action="store_true",
@@ -275,7 +282,15 @@ def parse_args():
         required=False,
         default=False,
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.package_count != -1 and args.no_download:
+        parser.error(
+            "It is an error to specify --package-count and --no-download at the same time."
+        )
+    if args.package_count == -1:
+        logging.warning("No --package-count specified. Defaulting to 5")
+        args.package_count = 5
+    return args
 
 
 if __name__ == "__main__":
@@ -292,7 +307,7 @@ if __name__ == "__main__":
     if not args.no_download:
         logging.info("Downloading PKGBUILDs")
         synchronize_package_databases()
-        packages = get_list_of_packages()
+        packages = get_list_of_packages(args.package_count)
         download_packages(packages)
     if not packages:
         packages = populate_packages_from_working_directory()
