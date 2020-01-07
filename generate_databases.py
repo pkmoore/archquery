@@ -94,7 +94,12 @@ def download_packages(packages):
         i.wait()
 
 
-def get_package_dirs():
+def populate_packages_from_working_directory():
+    logging.info(
+        "No packages specified or randomly selected.  "
+        "List of packages to be built will be determined by the contents "
+        "of the working directory"
+    )
     return [
         f
         for f in os.listdir(WORKING_DIRECTORY)
@@ -273,8 +278,6 @@ def parse_args():
     return parser.parse_args()
 
 
-# FIXME: Installing deps before build requires sudo creds
-# FIXME: Track a list of packages rather than following filesystem contents
 if __name__ == "__main__":
     if not check_executables():
         sys.exit(1)
@@ -289,11 +292,13 @@ if __name__ == "__main__":
     if not args.no_download:
         logging.info("Downloading PKGBUILDs")
         synchronize_package_databases()
-        download_packages(get_list_of_packages())
-    pkg_dirs = get_package_dirs()
+        packages = get_list_of_packages()
+        download_packages(packages)
+    if not packages:
+        packages = populate_packages_from_working_directory()
     if not args.no_modify:
         logging.info("Modifying PKGBUILDs")
-        modify_PKGBUILDS(pkg_dirs)
+        modify_PKGBUILDS(packages)
     if not args.no_build:
         logging.info("Building PKGBUILDs and databases")
-        build_databases(pkg_dirs)
+        build_databases(packages)
