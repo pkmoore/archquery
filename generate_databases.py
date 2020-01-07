@@ -12,6 +12,15 @@ import logging
 WORKING_DIRECTORY = os.path.join(os.path.expanduser("~"), ".archquerywork")
 CODEQL_DIR = os.path.join(os.path.expanduser("~"), "ql")
 
+
+def sudo_privs_ok():
+    output = subprocess.check_output(["sudo", "-l"]).decode("utf-8").split("\n")
+    perms = output[1].strip()
+    if perms != "(ALL) NOPASSWD: ALL":
+        return False
+    return True
+
+
 def get_list_of_packages():
     bad_packages = [
         "pacman-mirrorlist",  # not code
@@ -259,12 +268,17 @@ def parse_args():
     return parser.parse_args()
 
 
-# FIXME: Fails if arch repos haven't been synced recently. Auto sync?
 # FIXME: Installing deps before build requires sudo creds
 # FIXME: Track a list of packages rather than following filesystem contents
 if __name__ == "__main__":
     if not check_executables():
         sys.exit(1)
+    if not sudo_privs_ok():
+        logging.warning(
+            "The current user does not have permission to use sudo without a password."
+            "This will cause problems when installing dependencies."
+            "You will need to monitor the tool and re-enter the users's password periodically!"
+        )
     args = parse_args()
     os.chdir(WORKING_DIRECTORY)
     if not args.no_download:
