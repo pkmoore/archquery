@@ -1,8 +1,8 @@
 import os
-
 import sys
 import subprocess
 import re
+import random
 import argparse
 import logging
 
@@ -10,8 +10,47 @@ WORKING_DIRECTORY = '/home/preston/.archquerywork'
 CODEQL_DIR = '/home/preston/ql/'
 
 def get_list_of_packages():
-  bad_packages = ['pacman-mirrorlist', 'pacman']
-  return [f for f in os.popen('asp list-all | shuf | head -n 5').read().split('\n') if f not in bad_packages]
+  bad_packages = ['pacman-mirrorlist', # not code
+                  'pacman', # may cause problems
+                  'iotop', # python
+                  'sqlmap', # python
+                  'ansible', # python
+                  'diet-ng', # Dlang
+                  'poppler', # unknown
+                  'utox',  # build error
+                  'wine', # missing deps
+                  'alacritty', # rust
+                  'pantheon-dpms-helper', # no source found
+                  ]
+  packages = os.popen('asp list-all').read().split('\n')
+  # remove haskell packages
+  packages = [f for f in packages if 'haskell-' not in f]
+  # remove python packages
+  packages = [f for f in packages if 'python-' not in f]
+  packages = [f for f in packages if 'python2-' not in f]
+  # remove perl packages
+  packages = [f for f in packages if 'perl-' not in f]
+  # remove ruby packages
+  packages = [f for f in packages if 'ruby-' not in f]
+  # remove java packages
+  packages = [f for f in packages if 'java-' not in f]
+  # remove rust packages
+  packages = [f for f in packages if 'rust-' not in f]
+  # remove golang packages
+  packages = [f for f in packages if 'golang-' not in f]
+  # remove font packages
+  packages = [f for f in packages if 'ttf-' not in f]
+  # remove 32bit libs
+  packages = [f for f in packages if 'lib32' not in f]
+  # remove sound fonts
+  packages = [f for f in packages if '-midi' not in f]
+
+  # remove "bad" packages we don't want to use for whatever reason
+  packages = [f for f in packages if f not in bad_packages]
+
+  random.shuffle(packages)
+  return packages[:40]
+
 
 def check_executables():
   EXECUTABLES = ['asp', 'git', 'wget']
