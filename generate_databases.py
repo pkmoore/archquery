@@ -21,6 +21,11 @@ def sudo_privs_ok():
     return True
 
 
+def synchronize_package_databases():
+    logging.info("Updating package databases with 'pacman -Sy'")
+    subprocess.check_call(["sudo", "pacman", "-Sy"])
+
+
 def get_list_of_packages():
     bad_packages = [
         "pacman-mirrorlist",  # not code
@@ -283,6 +288,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIRECTORY)
     if not args.no_download:
         logging.info("Downloading PKGBUILDs")
+        synchronize_package_databases()
         download_packages(get_list_of_packages())
     pkg_dirs = get_package_dirs()
     if not args.no_modify:
