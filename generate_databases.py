@@ -96,8 +96,9 @@ def modify_PKGBUILDS(dirs):
         buildfn_start = k
         break
     if not buildfn_start:
-      raise RuntimeError('Could not find build function for {}'
-                         .format(i))
+      logging.error('Could not find build function for {}'
+                    .format(i))
+      continue
 
     buildfn_end = None
     for k,v in enumerate(lines[buildfn_start::]):
@@ -108,21 +109,24 @@ def modify_PKGBUILDS(dirs):
     line_to_modify = buildfn_end - 1
     line_contents = lines[line_to_modify]
     if pkgbuild_already_modified(line_contents):
-      raise RuntimeError('PKGBUILD for {} seems to have already been modified'
-                         .format(line_contents))
+      logging.warning('PKGBUILD for {} seems to have already been modified. Is currently:\n{}'
+                      .format(i, line_contents))
+      continue
     if appears_to_be_c_or_cpp_pkg(line_contents):
       lines[line_to_modify] = line_to_generate_c_or_cpp_database(line_contents, i)
     elif appears_to_be_python_pkg(line_contents):
       lines[line_to_modify] = line_to_generate_python_database(line_contents, i)
     else:
-      raise RuntimeError('We don\'t know what language this line is:\n {}'
-                         .format(line_contents))
+      logging.error('Package: {}\n'
+                    'We don\'t know what language this line is:\n {}'
+                    .format(i, line_contents))
+      continue
 
-    print('For package:', i)
-    print('build() started at:', buildfn_start)
-    print('build() ended at:', buildfn_end)
-    print('We modified line:', line_to_modify)
-    print('To become:\n', lines[line_to_modify])
+    logging.debug('For package: {}'.format(i))
+    logging.debug('build() started at: {}'.format(buildfn_start))
+    logging.debug('build() ended at: {}'.format(buildfn_end))
+    logging.debug('We modified line: {}'.format(line_to_modify))
+    logging.debug('To become:\n {}'.format(lines[line_to_modify]))
 
     with open(pkgbuild, 'w') as f:
       for i in lines:
@@ -167,6 +171,8 @@ def build_databases(dirs):
   # Problem is pacman being in use by multiple processes at a time.
   failures = []
   for i in dirs:
+    logging.info('Building and generating database for {}'
+                 .format(i))
     with open(build_log, 'a') as build_log_fd:
       pkgbuild_dir = os.path.join(os.path.join(WORKING_DIRECTORY, i), 'trunk')
       os.chdir(pkgbuild_dir)
