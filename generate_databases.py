@@ -14,7 +14,20 @@ CODEQL_DIR = os.path.join(os.path.expanduser("~"), "ql")
 
 
 def sudo_privs_ok():
-    output = subprocess.check_output(["sudo", "-l"]).decode("utf-8").split("\n")
+    """
+    Call and parse the output from 'sudo -l' to see if the user is allowed
+    to call sudo without entering a password.  Not having this capability is a
+    problem because future commands use sudo to install dependencies during the
+    package build process.  If a password is required, someone will have to
+    manually re-enter it periodically during long-running build operations
+
+
+    :returns: True if the user can call sudo without a password, otherwise False
+    """
+
+    output = (
+        subprocess.check_output(["sudo", "-l"]).decode("utf-8").split("\n")
+    )
     perms = output[1].strip()
     if perms != "(ALL) NOPASSWD: ALL":
         return False
@@ -22,6 +35,14 @@ def sudo_privs_ok():
 
 
 def synchronize_package_databases():
+    """
+    Get the latest info from pacman's repos using 'pacman -Sy'.  We do to
+    prevent issues when we go to install dependencies during the build
+    process.
+
+    :raises: CalledProcessError if 'pacman -Sy' fails
+    """
+
     logging.info("Updating package databases with 'pacman -Sy'")
     subprocess.check_call(["sudo", "pacman", "-Sy"])
 
@@ -103,7 +124,8 @@ def populate_packages_from_working_directory():
     return [
         f
         for f in os.listdir(WORKING_DIRECTORY)
-        if os.path.isdir(os.path.join(WORKING_DIRECTORY, f)) and f != "codeql_databases"
+        if os.path.isdir(os.path.join(WORKING_DIRECTORY, f))
+        and f != "codeql_databases"
     ]
 
 
@@ -113,7 +135,9 @@ def pkgbuild_already_modified(line):
 
 def modify_PKGBUILDS(dirs):
     for i in dirs:
-        pkgbuild = os.path.join(os.path.join(WORKING_DIRECTORY, i), "trunk/PKGBUILD")
+        pkgbuild = os.path.join(
+            os.path.join(WORKING_DIRECTORY, i), "trunk/PKGBUILD"
+        )
         with open(pkgbuild, "r") as f:
             lines = f.readlines()
 
@@ -142,9 +166,13 @@ def modify_PKGBUILDS(dirs):
             )
             continue
         if appears_to_be_c_or_cpp_pkg(line_contents):
-            lines[line_to_modify] = line_to_generate_c_or_cpp_database(line_contents, i)
+            lines[line_to_modify] = line_to_generate_c_or_cpp_database(
+                line_contents, i
+            )
         elif appears_to_be_python_pkg(line_contents):
-            lines[line_to_modify] = line_to_generate_python_database(line_contents, i)
+            lines[line_to_modify] = line_to_generate_python_database(
+                line_contents, i
+            )
         else:
             logging.error(
                 "Package: {}\n"
@@ -171,7 +199,9 @@ def line_to_generate_c_or_cpp_database(line, pkg):
         codeql_bin + ' database create --language=cpp --command="'
         + line.strip()
         + '" '
-        + os.path.join(os.path.join(WORKING_DIRECTORY, "codeql_databases"), pkg)
+        + os.path.join(
+            os.path.join(WORKING_DIRECTORY, "codeql_databases"), pkg
+        )
         + "\n"
     )
 
@@ -182,7 +212,9 @@ def line_to_generate_python_database(line, pkg):
         codeql_bin + ' database create --language=python --command="'
         + line.strip()
         + '" '
-        + os.path.join(os.path.join(WORKING_DIRECTORY, "codeql_databases"), pkg)
+        + os.path.join(
+            os.path.join(WORKING_DIRECTORY, "codeql_databases"), pkg
+        )
         + "\n"
     )
 
@@ -213,7 +245,9 @@ def build_databases(dirs):
     except FileNotFoundError:
         pass
 
-    codeql_database_directory = os.path.join(WORKING_DIRECTORY, "codeql_databases")
+    codeql_database_directory = os.path.join(
+        WORKING_DIRECTORY, "codeql_databases"
+    )
     if not os.path.exists(codeql_database_directory):
         os.mkdir(codeql_database_directory)
 
@@ -223,7 +257,9 @@ def build_databases(dirs):
     for i in dirs:
         logging.info("Building and generating database for {}".format(i))
         with open(build_log, "a") as build_log_fd:
-            pkgbuild_dir = os.path.join(os.path.join(WORKING_DIRECTORY, i), "trunk")
+            pkgbuild_dir = os.path.join(
+                os.path.join(WORKING_DIRECTORY, i), "trunk"
+            )
             os.chdir(pkgbuild_dir)
             result = subprocess.Popen(
                 [
@@ -251,6 +287,10 @@ def build_databases(dirs):
 
 
 def parse_args():
+    """ Parse command line arguments
+
+    @Notes: This is where the default value (5) for args.package_count comes from
+    """
     parser = argparse.ArgumentParser(
         description="Download Arch pkgbuilds and use them to generate codeql databases"
     )
