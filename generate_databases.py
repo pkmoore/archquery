@@ -84,11 +84,20 @@ def get_list_of_packages(package_count):
     # remove sound fonts
     packages = [f for f in packages if "-midi" not in f]
 
+    #existing_databases = get_existing_databases()
+    #packages = [f for f in packages if f not in existing_databases]
+
     # remove "bad" packages we don't want to use for whatever reason
     packages = [f for f in packages if f not in bad_packages]
 
     random.shuffle(packages)
     return packages[:package_count]
+
+
+def get_existing_databases():
+  return [os.path.basename(os.path.normpath(f.path))
+          for f in os.listdir(WORKING_DIRECTORY)
+          if os.isdir(f)]
 
 
 def check_executables():
